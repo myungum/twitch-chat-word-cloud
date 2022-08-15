@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>
+
+    <title>Word Cloud</title>
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <select id="channels"></select>
+
+    <div id="container" style="width:100%; height:100%;"></div>
+
+    <script>
+        var base_url = window.location.href;
+        var chart = anychart.tagCloud([]);
+
+        $(function() {
+            chart.container("container");
+            chart.draw();
+            $.ajax({
+                url: base_url + 'channels',
+                type: 'GET',
+                success: (channels, textStatus, jqXHR) => {                
+                    $('#channels').html('');
+                    $.each(channels, function(idx, channel) {
+                        $('#channels').append('<option value="' 
+                         + channel['channel']
+                         + '">'
+                         + channel['channel'] 
+                         + '</option>');
+                    });
+                    $('#channels').change(function() {
+                        $("#channels").attr("disabled", true);
+                        $.ajax({
+                            url: base_url + 'statistics/word/' + this.value,
+                            type: 'GET',
+                            success: (data, textStatus, jqXHR) => {    
+                                chart.data(data);
+                            },
+                            error : function(XMLHttpRequest, textStatus, errorThrown) { 
+                                alert("error : " + errorThrown)
+                            },
+                            complete: function(){
+                                $("#channels").attr("disabled", false);
+                            }
+                        });
+                    });
+                },
+                error : function(XMLHttpRequest, textStatus, errorThrown) { 
+                    alert("error : " + errorThrown)
+                }
+            });
+        });
+    </script>
+</body>
+</html>
