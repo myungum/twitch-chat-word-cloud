@@ -30,7 +30,12 @@
             $.ajax({
                 url: base_url + 'channels',
                 type: 'GET',
-                success: (channels, textStatus, jqXHR) => {                
+                success: (channels, textStatus, jqXHR) => {      
+                    if (channels.length == 0) {
+                        alert('channel data not found');
+                        return;
+                    } 
+                    
                     $('#channels').html('');
                     $.each(channels, function(idx, channel) {
                         $('#channels').append('<option value="' 
@@ -39,28 +44,35 @@
                          + channel['channel'] 
                          + '</option>');
                     });
-                    $('#channels').change(function() {
-                        $("#channels").attr("disabled", true);
-                        $.ajax({
-                            url: base_url + 'statistics/word/' + this.value,
-                            type: 'GET',
-                            success: (data, textStatus, jqXHR) => {    
-                                chart.data(data);
-                            },
-                            error : function(XMLHttpRequest, textStatus, errorThrown) { 
-                                alert("error : " + errorThrown)
-                            },
-                            complete: function(){
-                                $("#channels").attr("disabled", false);
-                            }
-                        });
+
+                    
+                    $('#channels').change(function(){
+                        load(this.value);
                     });
+                    load($("#channels option:selected").val());
                 },
                 error : function(XMLHttpRequest, textStatus, errorThrown) { 
                     alert("error : " + errorThrown)
                 }
             });
         });
+
+        function load(channel) {
+            $("#channels").attr("disabled", true);
+            $.ajax({
+                url: base_url + 'statistics/word/' + channel,
+                type: 'GET',
+                success: (data, textStatus, jqXHR) => {    
+                    chart.data(data);
+                },
+                error : function(XMLHttpRequest, textStatus, errorThrown) { 
+                    alert("error : " + errorThrown)
+                },
+                complete: function(){
+                    $("#channels").attr("disabled", false);
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ from konlpy.tag import Okt
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 
+FIND_CHAT_LIMIT = 2000
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
@@ -27,7 +28,7 @@ async def channels():
 @app.get("/statistics/word/{channel}")
 async def word_statistics(channel):
     # fetch data
-    res = db['chats'].find({'channel': channel}, {"text": 1}).sort("_id", -1).limit(10000)
+    res = db['chats'].find({'channel': channel}, {"text": 1}).sort("_id", -1).limit(FIND_CHAT_LIMIT)
     print('word_statistics :', channel)
 
     # tokenization & count
