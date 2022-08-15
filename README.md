@@ -4,6 +4,8 @@
 <img src="https://github.com/myungum/twitch-chat-word-cloud/blob/main/res/word-cloud.png" width="50%">
 
 # Dependencies
-[fastapi](https://fastapi.tiangolo.com/)
-[pymongo](https://pypi.org/project/pymongo/)
-[anychart](https://www.anychart.com/)
+### Python
+##### [fastapi](https://fastapi.tiangolo.com/)
+##### [pymongo](https://pypi.org/project/pymongo/)
+### Javascript
+##### [anychart](https://www.anychart.com/)
