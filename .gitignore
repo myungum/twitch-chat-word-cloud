@@ -12,6 +12,9 @@ setting.txt
 #pycharm
 .idea/
 
+#trash
+불용어.txt
+
 # Distribution / packaging
 .Python
 build/

@@ -3,8 +3,10 @@ from pymongo import MongoClient
 from konlpy.tag import Okt
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
+import json
 
-FIND_CHAT_LIMIT = 2000
+FIND_CHAT_LIMIT = 5000
+WORD_RANGE = 100
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
@@ -13,6 +15,7 @@ with open('setting.txt', 'r') as file:
     HOST, PORT, DB_NAME = file.readline().split()
 client = MongoClient(host=HOST, port=int(PORT))
 db = client[DB_NAME]
+trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 
 
 @app.get("/")
@@ -36,10 +39,11 @@ async def word_statistics(channel):
     counter = Counter()
     for doc in res:
         for token in okt.nouns(doc['text']):
-            counter[token] += 1
+            if token not in trash_list:
+                counter[token] += 1
 
     # convert into anychart's data format
     result = []
-    for word in counter.most_common(100):
+    for word in counter.most_common(WORD_RANGE):
         result.append({'x': word[0], 'value': word[1]})
     return result
