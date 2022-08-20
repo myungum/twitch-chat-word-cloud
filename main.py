@@ -28,6 +28,11 @@ async def channels():
     return list(db['top_channels_by_chat_count'].find({}, {'_id': 0}))
 
 
+@app.get("/graph")
+async def graph():
+    return db['graph'].find_one({}, {'_id': 0})
+
+
 @app.get("/statistics/word/{channel}")
 async def word_statistics(channel):
     # fetch data
