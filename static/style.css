@@ -1,0 +1,106 @@
+
+* {
+    font-family: 'Nanum Gothic', sans-serif;
+}
+
+html {   
+    height: 100%;
+}
+
+body {
+    height: 100%;
+}
+
+.layout-full {
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+.layout-left {
+    height: 100%;
+    display: flex;
+    flex-flow: column;
+    align-items: stretch;
+    float: left;
+    flex-grow: 1;
+    background-color: azure;
+}
+
+.layout-left-top {
+    width: 100%;
+    display: flex;
+    flex: 0 1 200px;
+    background-color: aqua;
+}
+
+.layout-left-bottom {
+    width: 100%;
+    flex: 1 1 auto;
+}
+
+.layout-right {
+    width: 400px;
+    height: 100%;
+}
+
+.chats-per-sec-left {
+    width: 200px;
+    height: 100%;
+}
+
+.chats-per-sec-right {
+    float: right;
+    flex-grow: 1;
+    background-color: white;
+}
+
+.chats-per-sec-span {
+    font-size: 2em;
+}
+
+#chats-per-sec {
+    width: 100%;
+    height: 200px;
+}
+
+#word-list {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+.word-list-item {
+    height: 100%;
+    display: flex;
+    margin: 10px;
+    background-color: antiquewhite;
+    box-shadow: 3px 3px 0 0 lightgray;
+}
+
+.word-list-item:hover {
+    background-color: bisque;
+    cursor: pointer;
+}
+
+.word-list-item-key-container {
+    width: 50%;
+    height: 100%;
+    float: left;
+    margin: 10px;
+}
+
+.word-list-item-value-container {
+    width: 50%;
+    height: 100%;
+    float: right;
+    margin: 10px;
+}
+
+.word-list-item-key {
+    font-size: 2em;
+}
+
+.word-list-item-value {
+    font-size: 1.5em;
+}
