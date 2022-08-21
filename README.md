@@ -9,3 +9,22 @@
 ##### [pymongo](https://pypi.org/project/pymongo/)
 ### Javascript
 ##### [anychart](https://www.anychart.com/)
+
+# Okt vs Mecab
+### 한국어 형태소 분석기 성능 비교
+##### 대상 : 한국어 채팅 데이터 5,172,850개
+##### 결과 : Okt = 808초, Mecab = 51초
+##### 코드
+```python
+# okt
+okt_start = time.time()
+for doc in tqdm(docs):
+    okt.nouns(doc['text'])
+print(time.time() - okt_start)
+
+# mecab
+mecab_start = time.time()
+for doc in tqdm(docs):
+    mecab.nouns(doc['text'])
+print(time.time() - mecab_start)
+```
