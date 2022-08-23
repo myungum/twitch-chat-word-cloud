@@ -23,6 +23,7 @@ $(function() {
                 ]
             },
             options: {
+                responsive: false,
                 scales: {
                     x: {
                         type: 'realtime',
@@ -50,6 +51,9 @@ $(function() {
                         data: []
                     }
                 ]
+            },
+            options: {
+                responsive: false
             }
         }
     );
@@ -72,7 +76,7 @@ $(function() {
                             x : time,
                             y : value[0]
                         });
-                        $('.chats-per-sec-span').text(value[0] +'chats/sec')
+                        $('.chats-per-sec-span').text(value[0]);
                     }
                 });
                 liveChart.update();

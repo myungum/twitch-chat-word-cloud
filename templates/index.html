@@ -23,22 +23,24 @@
         <div class="layout-left">
             <div class="layout-left-top">
                 <div class="chats-per-sec-left">
-                    <span class="chats-per-sec-span">
-                        
-                    </span>
+                    <div class="chats-per-sec-span-container">
+                        <span class="chats-per-sec-span"></span>
+                    </div>
                 </div>
                 <div class="chats-per-sec-right">
-                    <canvas id="chats-per-sec" class="chats-per-sec"></canvas>
+                    <canvas id="chats-per-sec" style="height:100%; width:100%"></canvas>
                 </div>
             </div>
             <div class="layout-left-bottom">
-                <canvas id="words-per-day"></canvas>
+                <canvas id="words-per-day" style="height:100%; width:100%"></canvas>
             </div>
         </div>
         <div class="layout-right">
-            <ul id="word-list">
+            <div class="word-list-scroller">
+                <ul id="word-list">
                 
-            </ul>
+                </ul>
+            </div>
         </div>
     </div>
 </body>
