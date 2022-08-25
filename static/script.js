@@ -93,7 +93,7 @@ $(function() {
 function load_list() {
     $("#word-list").html('');
     $.ajax({
-        url: base_url + 'statistics/word',
+        url: base_url + 'word_count/all/today',
         type: 'GET',
         success: (data, textStatus, jqXHR) => {  
             $.each(data, function(key, value) {
@@ -118,7 +118,7 @@ function load_list() {
 
 function load_chart(word) {
     $.ajax({
-        url: base_url + 'statistics/word/' + word,
+        url: base_url + 'word_count/specify/' + word + "/10",
         type: 'GET',
         success: (data, textStatus, jqXHR) => {  
             wordChart.data.datasets[0].data = data;
