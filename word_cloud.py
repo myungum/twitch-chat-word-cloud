@@ -10,6 +10,7 @@ import json
 FIND_CHAT_LIMIT = 5000
 WORD_RANK_SIZE = 500
 CHATS_PER_SEC_FIND_LIMIT = 30
+
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -37,7 +38,7 @@ async def chats_per_sec():
 
 
 @app.get("/word_count/all/today",
-         summary="Get today's word frequency")
+         summary="Get word frequency for today")
 async def word_count_today_all():
     today = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     counter = Counter()
@@ -45,6 +46,23 @@ async def word_count_today_all():
         counter += Counter(channel_doc['words'])
 
     return dict(counter.most_common(WORD_RANK_SIZE))
+
+
+@app.get("/word_count/all/recent",
+         summary="Get word frequency for the nearest date")
+async def word_count_recent_all():
+    for i in range(1, 8):
+        date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+        print(date)
+        counter = Counter()
+        docs = list(db['word_statistics'].find({'date': date}))
+        if len(docs) > 0:
+            for channel_doc in docs:
+                counter += Counter(channel_doc['words'])
+
+            return dict(counter.most_common(WORD_RANK_SIZE))
+
+    return dict()
 
 
 @app.get("/word_count/specify/{word}/{period}",

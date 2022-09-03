@@ -93,7 +93,7 @@ $(function() {
 function load_list() {
     $("#word-list").html('');
     $.ajax({
-        url: base_url + 'word_count/all/today',
+        url: base_url + 'word_count/all/recent',
         type: 'GET',
         success: (data, textStatus, jqXHR) => {  
             $.each(data, function(key, value) {
