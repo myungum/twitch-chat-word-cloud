@@ -70,7 +70,8 @@ $(function() {
                 }
 
                 $.each(data, function(idx, value) {
-                    var time = Date.parse(value[1]);
+                    var a = value[1].split(/[^0-9]/);
+                    var time = new Date (a[0],a[1]-1,a[2],a[3],a[4],a[5] );
                     if (latest_data_time < time) {
                         series.push({
                             x : time,
