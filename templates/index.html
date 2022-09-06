@@ -1,23 +1,25 @@
 <!DOCTYPE html>
+
 <head>
     <meta charset="UTF-8">
+    <!-- jquery -->
     <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <!-- chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@^3"></script>
     <script src="https://cdn.jsdelivr.net/npm/luxon@^2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@^1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@^2"></script>
-
-    <script src='https://d3js.org/d3.v5.min.js'></script>
-
     <!-- font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&family=Noto+Sans+KR&display=swap" rel="stylesheet">
-
-    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet"> 
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&family=Noto+Sans+KR&display=swap"
+        rel="stylesheet">
+    <!-- local -->
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
     <script src="{{ url_for('static', path='/script.js') }}"></script>
     <title>Word Statistics</title>
 </head>
+
 <body>
     <div class="layout-full">
         <div class="layout-left">
@@ -38,10 +40,11 @@
         <div class="layout-right">
             <div class="word-list-scroller">
                 <ul id="word-list">
-                
+
                 </ul>
             </div>
         </div>
     </div>
 </body>
+
 </html>

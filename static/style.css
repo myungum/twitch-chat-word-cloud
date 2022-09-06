@@ -1,9 +1,8 @@
-
 * {
     font-family: 'Nanum Gothic', sans-serif;
 }
 
-html {   
+html {
     height: 100%;
     box-sizing: border-box;
 }
@@ -63,7 +62,7 @@ body {
 
 .chats-per-sec-span {
     font-size: 4em;
-    color:rgb(73, 73, 73);
+    color: rgb(73, 73, 73);
 }
 
 .word-list-scroller {
