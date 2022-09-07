@@ -53,7 +53,7 @@ $(function () {
                 ]
             },
             options: {
-                responsive: false
+                responsive: true
             }
         }
     );
