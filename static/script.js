@@ -23,7 +23,8 @@ $(function () {
                 ]
             },
             options: {
-                responsive: false,
+                maintainAspectRatio: false,
+                responsive: true,
                 scales: {
                     x: {
                         type: 'realtime',
@@ -53,6 +54,7 @@ $(function () {
                 ]
             },
             options: {
+                maintainAspectRatio: false,
                 responsive: true
             }
         }
