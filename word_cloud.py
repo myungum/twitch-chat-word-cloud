@@ -41,28 +41,13 @@ async def chats_per_sec():
          summary="Get word frequency for today")
 async def word_count_today_all():
     today = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    counter = Counter()
-    for channel_doc in db['word_statistics'].find({'date': today}):
-        counter += Counter(channel_doc['words'])
-
-    return dict(counter.most_common(WORD_RANK_SIZE))
+    return db['word_frequency'].fine_one({'date': today})['data']
 
 
 @app.get("/word_count/all/recent",
          summary="Get word frequency for the nearest date")
 async def word_count_recent_all():
-    for i in range(1, 8):
-        date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
-        print(date)
-        counter = Counter()
-        docs = list(db['word_statistics'].find({'date': date}))
-        if len(docs) > 0:
-            for channel_doc in docs:
-                counter += Counter(channel_doc['words'])
-
-            return dict(counter.most_common(WORD_RANK_SIZE))
-
-    return dict()
+    return db['word_frequency'].find({}, {'data': 1}).sort('date', -1)[0]['data']
 
 
 @app.get("/word_count/specify/{word}/{period}",
@@ -71,12 +56,11 @@ async def word_count_in_10days(word: str, period: int):
     result = []
     for delta in range(period, 0, -1):
         target_day = (datetime.now() - timedelta(days=delta)).strftime('%Y-%m-%d')
-        count = 0
-        for channel_doc in db['word_statistics'].find({'date': target_day}, {'_id': 0, 'words.' + word: 1}):
-            if word in channel_doc['words']:
-                count += channel_doc['words'][word]
-        result.append({
-            "x": target_day,
-            "y": count
-        })
+        doc = db['word_frequency'].find_one({'date': target_day}, {'_id': 0, 'data.' + word: 1})
+        if doc is not None:
+            count = doc['data'][word] if word in doc['data'] else 0
+            result.append({
+                "x": target_day,
+                "y": count
+            })
     return result

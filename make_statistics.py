@@ -11,6 +11,7 @@ from soynlp.word import WordExtractor
 from soynlp.tokenizer import MaxScoreTokenizer
 
 UPDATE_PERIOD = 60
+RANK_SIZE = 1000
 
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 without_hangul = re.compile('[^ ㄱ-ㅎㅏ-ㅣ가-힣+]')
@@ -32,6 +33,8 @@ def make_word_frequency(today, tokenizer):
     not_prepared = [datetime.strptime(date_str, '%Y-%m-%d').date() for date_str in not_prepared]
     # remove not finished date
     not_prepared = [date for date in not_prepared if date < today]
+    # sort
+    not_prepared.sort(reverse=True)
 
     if len(not_prepared) > 0:
         for date in tqdm(not_prepared):
@@ -47,7 +50,7 @@ def make_word_frequency(today, tokenizer):
             
             db['word_frequency'].insert_one({
                 'date': date_str,
-                'data' : dict(counter.most_common(50))
+                'data' : dict(counter.most_common(RANK_SIZE))
             })
 
 
@@ -74,6 +77,13 @@ def get_tokenizer(today):
         # save tokenizer
         with open (tokenizer_file_name, 'wb') as f:
             pickle.dump(tokenizer, f)
+        
+        # free memory
+        chats = None
+        word_extractor = None
+        word_score_table = None
+        scores = None
+        tokenizer = None
     
     # return tokenizer
     with open(tokenizer_file_name, 'rb') as f:
