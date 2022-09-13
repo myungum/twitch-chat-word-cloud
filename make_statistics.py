@@ -1,7 +1,6 @@
 import pickle
 from pymongo import MongoClient
 from collections import Counter
-from konlpy.tag import *
 import time
 from tqdm import tqdm
 from datetime import datetime, timedelta
@@ -26,18 +25,22 @@ client = None
 db = None
 
 
-def make_word_frequency(today, tokenizer):
-    # get difference set
-    not_prepared = list(set(db['chats'].distinct('date')) - set(db['word_frequency'].distinct('date')))
+def get_missing_dates(today, collection_name):
+    missing_dates = list(set(db['chats'].distinct('date')) - set(db[collection_name].distinct('date')))
     # convert str into date
-    not_prepared = [datetime.strptime(date_str, '%Y-%m-%d').date() for date_str in not_prepared]
+    missing_dates = [datetime.strptime(date_str, '%Y-%m-%d').date() for date_str in missing_dates]
     # remove not finished date
-    not_prepared = [date for date in not_prepared if date < today]
+    missing_dates = [date for date in missing_dates if date < today]
     # sort
-    not_prepared.sort(reverse=True)
+    missing_dates.sort(reverse=True)
+    return missing_dates
 
-    if len(not_prepared) > 0:
-        for date in tqdm(not_prepared):
+
+def make_word_frequency(today, tokenizer):
+    missing_dates = get_missing_dates(today, 'word_frequency')
+
+    if len(missing_dates) > 0:
+        for date in tqdm(missing_dates):
             date_str = date.strftime('%Y-%m-%d')
             print('make word frequency:', date_str)
             counter = Counter()
@@ -54,6 +57,39 @@ def make_word_frequency(today, tokenizer):
             })
 
 
+def make_word_increase(today):
+    missing_dates = get_missing_dates(today, 'word_increase')
+
+    if len(missing_dates) > 0:
+        for date in tqdm(missing_dates):
+            date_str = date.strftime('%Y-%m-%d')
+            min_date_str = (date - timedelta(days=7)).strftime('%Y-%m-%d')
+            print('make word increase:', date_str)
+
+            # get data for week
+            docs = list(db['word_frequency'].find({
+                'date': {
+                    '$gte': min_date_str,
+                    '$lt': date_str
+                }
+            }).sort('date', 1))
+
+            # make word increase
+            increase = []
+            for word, count in db['word_frequency'].find_one({'date': date_str})['data'].items():
+                counts = [doc['data'][word] if word in doc['data'] else 0 for doc in docs]
+                if len(counts) > 0:
+                    # expected value = max(average for week, yesterday's value)
+                    avg = sum(counts) / len(counts)
+                    expected = max(avg, counts[-1], 1)
+                    increase.append((word, (count - expected) / expected))
+            
+            increase.sort(key=lambda x: x[1], reverse=True)
+            db['word_increase'].insert_one({
+                'date': date_str,
+                'data': dict(increase)
+            })
+                
 
 def get_tokenizer(today):
     tokenizer_file_name = os.getcwd() + '\\soynlp_tokenizer\\' + today.strftime('%Y-%m-%d')
@@ -99,6 +135,7 @@ while True:
         
         tokenizer = get_tokenizer(start_time.date())
         make_word_frequency(start_time.date(), tokenizer)
+        make_word_increase(start_time.date())
 
     except Exception as e:
         print('Exception :', str(e))
