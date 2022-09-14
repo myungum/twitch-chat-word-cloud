@@ -10,7 +10,7 @@ from soynlp.word import WordExtractor
 from soynlp.tokenizer import MaxScoreTokenizer
 
 UPDATE_PERIOD = 60
-RANK_SIZE = 1000
+MIN_COUNT = 24
 
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 without_hangul = re.compile('[^ ㄱ-ㅎㅏ-ㅣ가-힣+]')
@@ -51,9 +51,15 @@ def make_word_frequency(today, tokenizer):
                     word_set.add(word)
                 counter.update(word_set)
             
+            data = []
+            for word, count in counter.most_common():
+                if count >= MIN_COUNT:
+                    data.append((word, count))
+            counter = None
+
             db['word_frequency'].insert_one({
                 'date': date_str,
-                'data' : dict(counter.most_common(RANK_SIZE))
+                'data' : dict(data)
             })
 
 

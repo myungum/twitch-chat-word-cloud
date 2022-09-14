@@ -105,7 +105,7 @@ function load_list() {
                     + '<span class="word-list-item-key">' + key + '</span>'
                     + '</div>'
                     + '<div class="word-list-item-value-container">'
-                    + '<span class="word-list-item-value">' + value + '</span>'
+                    + '<span class="word-list-item-value">' + value + '%</span>'
                     + '</div></li>');
             });
 

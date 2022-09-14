@@ -47,7 +47,7 @@ async def word_count_today_all():
 @app.get("/word_count/all/recent",
          summary="Get word frequency for the nearest date")
 async def word_count_recent_all():
-    return db['word_frequency'].find({}, {'data': 1}).sort('date', -1)[0]['data']
+    return db['word_increase'].find({}, {'data': 1}).sort('date', -1)[0]['data']
 
 
 @app.get("/word_count/specify/{word}/{period}",
