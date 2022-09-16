@@ -8,6 +8,7 @@ import re
 import os
 from soynlp.word import WordExtractor
 from soynlp.tokenizer import MaxScoreTokenizer
+import math
 
 UPDATE_PERIOD = 60
 MIN_COUNT = 24
@@ -63,14 +64,14 @@ def make_word_frequency(today, tokenizer):
             })
 
 
-def make_word_increase(today):
-    missing_dates = get_missing_dates(today, 'word_increase')
+def make_word_rank(today):
+    missing_dates = get_missing_dates(today, 'word_rank')
 
     if len(missing_dates) > 0:
         for date in tqdm(missing_dates):
             date_str = date.strftime('%Y-%m-%d')
             min_date_str = (date - timedelta(days=7)).strftime('%Y-%m-%d')
-            print('make word increase:', date_str)
+            print('make word rank:', date_str)
 
             # get data for week
             docs = list(db['word_frequency'].find({
@@ -80,20 +81,23 @@ def make_word_increase(today):
                 }
             }).sort('date', 1))
 
-            # make word increase
-            increase = []
+            # make word rank
+            rank = []
             for word, count in db['word_frequency'].find_one({'date': date_str})['data'].items():
                 counts = [doc['data'][word] if word in doc['data'] else 0 for doc in docs]
                 if len(counts) > 0:
                     # expected value = max(average for week, yesterday's value)
                     avg = sum(counts) / len(counts)
-                    expected = max(avg, counts[-1], 1)
-                    increase.append((word, (count - expected) / expected))
+                    expected = max(avg, counts[-1])
+                    if expected > 0:
+                        increase = (count - expected) / expected
+                        score = int(increase * math.log2(count))
+                        rank.append((word, (score, count, increase)))
             
-            increase.sort(key=lambda x: x[1], reverse=True)
-            db['word_increase'].insert_one({
+            rank.sort(key=lambda x: x[1][0], reverse=True)
+            db['word_rank'].insert_one({
                 'date': date_str,
-                'data': dict(increase)
+                'data': dict(rank)
             })
                 
 
@@ -141,7 +145,7 @@ while True:
         
         tokenizer = get_tokenizer(start_time.date())
         make_word_frequency(start_time.date(), tokenizer)
-        make_word_increase(start_time.date())
+        make_word_rank(start_time.date())
 
     except Exception as e:
         print('Exception :', str(e))

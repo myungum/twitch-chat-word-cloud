@@ -37,20 +37,20 @@ async def chats_per_sec():
     return list(map(lambda doc: (doc['chats_per_sec'], doc['datetime']), docs))
 
 
-@app.get("/word_count/all/today",
+@app.get("/word/rank/all/today",
          summary="Get word frequency for today")
 async def word_count_today_all():
     today = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    return db['word_frequency'].fine_one({'date': today})['data']
+    return db['word_rank'].find_one({'date': today})['data']
 
 
-@app.get("/word_count/all/recent",
+@app.get("/word/rank/all/recent",
          summary="Get word frequency for the nearest date")
 async def word_count_recent_all():
-    return db['word_increase'].find({}, {'data': 1}).sort('date', -1)[0]['data']
+    return db['word_rank'].find({}, {'data': 1}).sort('date', -1)[0]['data']
 
 
-@app.get("/word_count/specify/{word}/{period}",
+@app.get("/word/count/specify/{word}/{period}",
          summary="Get number of word in 10 days")
 async def word_count_in_10days(word: str, period: int):
     result = []
