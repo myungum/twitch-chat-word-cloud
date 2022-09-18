@@ -37,17 +37,25 @@ async def chats_per_sec():
     return list(map(lambda doc: (doc['chats_per_sec'], doc['datetime']), docs))
 
 
-@app.get("/word/rank/all/today",
+@app.get("/word/rank/today/{rank_size}",
          summary="Get word frequency for today")
-async def word_count_today_all():
+async def word_count_today_all(rank_size : int):
     today = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    return db['word_rank'].find_one({'date': today})['data']
+    doc =  db['word_rank'].find_one({'date': today})
+    res = list(doc['data'].items())
+    if rank_size > 0:
+        res = res[:rank_size]
+    return res
 
 
-@app.get("/word/rank/all/recent",
+@app.get("/word/rank/recent/{rank_size}",
          summary="Get word frequency for the nearest date")
-async def word_count_recent_all():
-    return db['word_rank'].find({}, {'data': 1}).sort('date', -1)[0]['data']
+async def word_count_recent_all(rank_size : int):
+    doc = db['word_rank'].find({}, {'data': 1}).sort('date', -1)[0]
+    res = list(doc['data'].items())
+    if rank_size > 0:
+        res = res[:rank_size]
+    return res
 
 
 @app.get("/word/count/specify/{word}/{period}",

@@ -96,16 +96,16 @@ $(function () {
 function load_list() {
     $("#word-list").html('');
     $.ajax({
-        url: base_url + 'word/rank/all/recent',
+        url: base_url + 'word/rank/recent/20',
         type: 'GET',
         success: (data, textStatus, jqXHR) => {
-            $.each(data, function (key, value) {
-                $('#word-list').append('<li class="word-list-item" name="' + key + '">'
+            $.each(data, function (idx, value) {
+                $('#word-list').append('<li class="word-list-item" name="' + value[0] + '">'
                     + '<div class="word-list-item-key-container">'
-                    + '<span class="word-list-item-key">' + key + '</span>'
+                    + '<span class="word-list-item-key">' + (idx + 1) + '</span>'
                     + '</div>'
                     + '<div class="word-list-item-value-container">'
-                    + '<span class="word-list-item-value">' + value[0] + '점</span>'
+                    + '<span class="word-list-item-value">' + value[0] + '</span>'
                     + '</div></li>');
             });
 
