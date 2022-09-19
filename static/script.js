@@ -40,25 +40,6 @@ $(function () {
             }
         }
     );
-    wordChart = new Chart(
-        document.getElementById('words-per-day'),
-        {
-            type: 'line',
-            data: {
-                datasets: [
-                    {
-                        tension: 0.3,
-                        fill: true,
-                        data: []
-                    }
-                ]
-            },
-            options: {
-                maintainAspectRatio: false,
-                responsive: true
-            }
-        }
-    );
 
     setInterval(function () {
         $.ajax({
@@ -124,9 +105,33 @@ function load_chart(word) {
         url: base_url + 'word/count/specify/' + word + "/10",
         type: 'GET',
         success: (data, textStatus, jqXHR) => {
-            wordChart.data.datasets[0].data = data;
-            wordChart.data.datasets[0].label = word;
-            wordChart.update();
+            if (wordChart == null) {
+                wordChart = new Chart(
+                    document.getElementById('words-per-day'),
+                    {
+                        type: 'line',
+                        data: {
+                            datasets: [
+                                {
+                                    tension: 0.3,
+                                    fill: true,
+                                    label: word,
+                                    data: data
+                                }
+                            ]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            responsive: true
+                        }
+                    }
+                );
+            }
+            else {
+                wordChart.data.datasets[0].data = data;
+                wordChart.data.datasets[0].label = word;
+                wordChart.update();
+            }
         },
         error: function (XMLHttpRequest, textStatus, errorThrown) {
             alert("error : " + errorThrown)
