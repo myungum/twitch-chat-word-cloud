@@ -84,15 +84,15 @@ def make_word_rank(today):
             # make word rank
             rank = []
             for word, count in db['word_frequency'].find_one({'date': date_str})['data'].items():
-                counts = [doc['data'][word] if word in doc['data'] else 0 for doc in docs]
-                if len(counts) > 0:
-                    # expected value = max(average for week, yesterday's value)
-                    avg = sum(counts) / len(counts)
-                    expected = max(avg, counts[-1])
-                    if expected > 0:
-                        increase = (count - expected) / expected
-                        score = int(increase * math.log2(count))
-                        rank.append((word, (score, count, increase)))
+                weekly_counts = [doc['data'][word] if word in doc['data'] else MIN_COUNT - 1 for doc in docs]
+                
+                # expected value = max(average for week, yesterday's value)
+                avg = sum(weekly_counts) / len(weekly_counts)
+                expected = max(avg, weekly_counts[0])
+                increase = (count - expected) / expected
+                if increase > 0:
+                    score = int(increase * math.log2(count))
+                    rank.append((word, (score, count, increase)))
             
             rank.sort(key=lambda x: x[1][0], reverse=True)
             db['word_rank'].insert_one({

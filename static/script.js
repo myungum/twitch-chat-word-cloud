@@ -77,7 +77,7 @@ $(function () {
 function load_list() {
     $("#word-list").html('');
     $.ajax({
-        url: base_url + 'word/rank/recent/20',
+        url: base_url + 'word/rank/recent/30',
         type: 'GET',
         success: (data, textStatus, jqXHR) => {
             $.each(data, function (idx, value) {
