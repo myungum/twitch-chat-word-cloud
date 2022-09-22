@@ -10,7 +10,7 @@ from soynlp.word import WordExtractor
 from soynlp.tokenizer import MaxScoreTokenizer
 import math
 
-UPDATE_PERIOD = 60
+UPDATE_PERIOD = 600
 MIN_COUNT = 24
 
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
@@ -24,6 +24,16 @@ with open('setting.txt', 'r') as f:
     client_id, client_secret = f.readline().split()
 client = None
 db = None
+
+
+def add_log(msg):
+    now = datetime.now()
+    print('[{}] {}'.format(now, msg))
+    db['log'].insert_one({
+        'source' : __file__,
+        'msg' : msg,
+        'datetime' : now
+    })
 
 
 def get_missing_dates(today, collection_name):
@@ -43,7 +53,7 @@ def make_word_frequency(today, tokenizer):
     if len(missing_dates) > 0:
         for date in tqdm(missing_dates):
             date_str = date.strftime('%Y-%m-%d')
-            print('make word frequency:', date_str)
+            add_log('make word frequency: ' +  date_str)
             counter = Counter()
             for doc in tqdm(list(db['chats'].find({'date': date_str}, {'_id': 0, 'text': 1}))):
                 word_set = set()
@@ -71,7 +81,7 @@ def make_word_rank(today):
         for date in tqdm(missing_dates):
             date_str = date.strftime('%Y-%m-%d')
             min_date_str = (date - timedelta(days=7)).strftime('%Y-%m-%d')
-            print('make word rank:', date_str)
+            add_log('make word rank: ' + date_str)
 
             # get data for week
             docs = list(db['word_frequency'].find({
@@ -93,18 +103,18 @@ def make_word_rank(today):
                 if increase > 0:
                     score = int(increase * math.log2(count))
                     rank.append((word, (score, count, increase)))
-            
+
             rank.sort(key=lambda x: x[1][0], reverse=True)
             db['word_rank'].insert_one({
                 'date': date_str,
                 'data': dict(rank)
             })
-                
-
+            
+            
 def get_tokenizer(today):
     tokenizer_file_name = os.getcwd() + '\\soynlp_tokenizer\\' + today.strftime('%Y-%m-%d')
     if not os.path.exists(tokenizer_file_name):
-        print('make tokenizer')
+        add_log('make tokenizer')
         # chats for a week
         chats = []
         for date_str in tqdm([(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, 8)]):
@@ -112,7 +122,7 @@ def get_tokenizer(today):
                 chat = without_hangul.sub('', doc['text']).strip()
                 if len(chat) > 0:
                     chats.append(chat)
-        
+                    
         # make tokenizer
         word_extractor = WordExtractor()
         word_extractor.train(chats)
@@ -147,11 +157,12 @@ while True:
         make_word_frequency(start_time.date(), tokenizer)
         make_word_rank(start_time.date())
 
+        elapsed_time = datetime.now() - start_time
+        add_log('elapsed time: ' + str(elapsed_time))
+
+        if UPDATE_PERIOD > elapsed_time.seconds:
+            time.sleep(UPDATE_PERIOD - elapsed_time.seconds)
     except Exception as e:
-        print('Exception :', str(e))
+        add_log('Exception: ' +  str(e))
     finally:
         client.close()
-    elapsed_time = datetime.now() - start_time
-    print('elapsed time:', elapsed_time)
-    if UPDATE_PERIOD > elapsed_time.seconds:
-        time.sleep(UPDATE_PERIOD - elapsed_time.seconds)
