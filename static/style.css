@@ -43,7 +43,7 @@ body {
 }
 
 .layout-right {
-    width: 22em;
+    width: 12em;
     padding : 10px;
     background-color: white;
 }
@@ -73,6 +73,7 @@ body {
 .word-list-scroller {
     height: 100%;
     overflow: auto;
+    overflow-x: hidden;
 }
 
 #word-list {
@@ -85,6 +86,8 @@ body {
     width: 100%;
     height: 100%;
     border-bottom: 1px solid lightgray;
+    display: flex;
+    flex-direction: row;
 }
 
 .word-list-item:last-child {
@@ -97,18 +100,16 @@ body {
 }
 
 .word-list-item-key-container {
-    width: 3em;
+    width: 2em;
     height: 100%;
     margin: 10px;
     text-align: right;
-    display: inline-block;
 }
 
 .word-list-item-value-container {
-    width: auto;
     height: 100%;
     margin: 10px;
-    display: inline-block;
+    flex-grow: 1;
 }
 
 .word-list-item-key {
@@ -118,6 +119,7 @@ body {
 
 .word-list-item-value {
     font-size: 1.3em;
+    white-space: nowrap;
 }
 
 .chart-container {

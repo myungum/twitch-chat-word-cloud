@@ -1,14 +1,9 @@
-from collections import Counter
 from pymongo import MongoClient
-from konlpy.tag import Okt
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
-import json
 
-FIND_CHAT_LIMIT = 5000
-WORD_RANK_SIZE = 500
 CHATS_PER_SEC_FIND_LIMIT = 30
 
 app = FastAPI()
