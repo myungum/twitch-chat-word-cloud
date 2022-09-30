@@ -14,6 +14,7 @@ UPDATE_PERIOD = 600
 MIN_COUNT = 24
 TOKENIZER_DIR = os.getcwd() + '/soynlp_tokenizer'
 TOKENIZER_TRAIN_RANGE = 7
+TOKENIZER_TRAIN_CHAT_SIZE = 10 ** 7
 
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 without_hangul = re.compile('[^ ㄱ-ㅎㅏ-ㅣ가-힣+]')
@@ -50,6 +51,25 @@ def get_missing_dates(today, collection_name):
     # sort
     missing_dates.sort(reverse=True)
     return missing_dates
+
+
+def get_chats(target_date, max_chat_count):
+    week = [(target_date
+                 - timedelta(days=(i+1))).strftime('%Y-%m-%d') for i in range(TOKENIZER_TRAIN_RANGE)]
+    chats = []
+
+    for date_str in tqdm(week):
+        docs = list(db['chats'].find({'date': date_str}))
+        if len(docs) == 0:
+            return chats
+
+        for doc in docs:
+            chat = without_hangul.sub('', doc['text']).strip()
+            if len(chat) > 0:
+                chats.append(chat)
+                if len(chats) >= max_chat_count:
+                    return chats
+    return chats
 
 
 def make_word_frequency(today):
@@ -127,17 +147,9 @@ def get_tokenizer(target_date):
 
     if not os.path.exists(tokenizer_file_name):
         add_log('make tokenizer : {}'.format(tokenizer_file_name))
-        # chats for a week
-        chats = []
-        week = [(target_date
-                 - timedelta(days=(i+1))).strftime('%Y-%m-%d') for i in range(TOKENIZER_TRAIN_RANGE)]
-        for date_str in tqdm(week):
-            for doc in db['chats'].find({'date': date_str}):
-                chat = without_hangul.sub('', doc['text']).strip()
-                if len(chat) > 0:
-                    chats.append(chat)
 
         # make tokenizer
+        chats = get_chats(target_date, TOKENIZER_TRAIN_CHAT_SIZE)
         word_extractor = WordExtractor()
         word_extractor.train(chats)
         word_score_table = word_extractor.extract()
