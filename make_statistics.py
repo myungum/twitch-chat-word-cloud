@@ -55,13 +55,11 @@ def get_missing_dates(today, collection_name):
 
 def get_chats(target_date, max_chat_count):
     week = [(target_date
-                 - timedelta(days=(i+1))).strftime('%Y-%m-%d') for i in range(TOKENIZER_TRAIN_RANGE)]
+                 - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(TOKENIZER_TRAIN_RANGE)]
     chats = []
 
     for date_str in tqdm(week):
         docs = list(db['chats'].find({'date': date_str}))
-        if len(docs) == 0:
-            return chats
 
         for doc in docs:
             chat = without_hangul.sub('', doc['text']).strip()
