@@ -10,7 +10,7 @@ __pycache__/
 *.so
 
 #setting
-setting.txt
+settings.json
 
 #vscode
 .vscode/

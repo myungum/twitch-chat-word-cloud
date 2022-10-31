@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
+import json
 
 CHATS_PER_SEC_FIND_LIMIT = 30
 
@@ -11,9 +12,10 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # db connection info
-with open('setting.txt', 'r') as file:
-    HOST, PORT, DB_NAME = file.readline().split()
-client = MongoClient(host=HOST, port=int(PORT))
+with open('settings.json', 'r') as file:
+    conn_info = dict(json.load(file))
+    DB_HOST, DB_PORT, DB_NAME = conn_info['db_host'], conn_info['db_port'], conn_info['db_name']
+client = MongoClient(host=DB_HOST, port=int(DB_PORT))
 db = client[DB_NAME]
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 
