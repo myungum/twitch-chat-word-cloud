@@ -4,6 +4,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
 import json
+import time
+from threading import Thread, Lock
+from collections import deque
 
 CHATS_PER_SEC_FIND_LIMIT = 30
 
@@ -19,6 +22,35 @@ client = MongoClient(host=DB_HOST, port=int(DB_PORT))
 db = client[DB_NAME]
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 
+cps = deque()
+cps_lock = Lock()
+
+
+def cal_cps():
+    last_obj_id = db['chat'].find({}).sort('_id', -1).limit(1)[0]['_id']
+
+    while True:
+        start_time = datetime.now()
+        cnt = 0
+        for doc in db['chat'].find({'_id': {'$gt': last_obj_id}}):
+            if 'PRIVMSG' in doc['message']:
+                cnt += 1
+            last_obj_id = doc['_id']
+            
+        cps_lock.acquire()
+        cps.append((cnt, datetime.now()))
+        while len(cps) > CHATS_PER_SEC_FIND_LIMIT:
+            cps.popleft()
+        cps_lock.release()
+
+        elapsed_time = (datetime.now() - start_time).total_seconds()
+        time.sleep(max(1 - elapsed_time, 0))
+
+
+th = Thread(target=cal_cps)
+th.daemon = True
+th.start()
+
 
 @app.get("/",
          summary="index.html")
@@ -29,9 +61,10 @@ async def index(request: Request):
 @app.get("/chats_per_sec",
          summary="Get number of messages per second")
 async def chats_per_sec():
-    docs = list(db['status'].find({}).sort('_id', -1).limit(CHATS_PER_SEC_FIND_LIMIT))
-    docs.reverse()
-    return list(map(lambda doc: (doc['chats_per_sec'], doc['datetime']), docs))
+    cps_lock.acquire()
+    result = list(cps)
+    cps_lock.release()
+    return result
 
 
 @app.get("/word/rank/today/{rank_size}",
