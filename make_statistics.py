@@ -58,62 +58,59 @@ def get_missing_dates(today: datetime, collection_name: str, to_str: bool):
     return missing_dates
 
 
-def get_chats(target_date: datetime):
+def get_docs(target_date: datetime, *args):
     lower_bound = target_date
     upper_bound = lower_bound + timedelta(days=1)
-    error = 0
+    query = [{'message': {'$regex': arg}} for arg in args]
     docs = list(db['chat'].find({'$and': [{
-                    'datetime' : {'$gte' : lower_bound}
-                },
-                    {
-                    'datetime' : {'$lt' : upper_bound}
-                }, {
-                    'message' : {'$regex' : 'PRIVMSG'}
-                }]}).sort('datetime', 1))
-    # remove duplicated chat
+        'datetime': {'$gte': lower_bound}
+    },
+        {
+        'datetime': {'$lt': upper_bound}
+    }, {
+        '$or': query
+    }]}).sort('datetime', 1))
+    # remove duplicated docs
     msg_dic = dict()
     front = 0
     rear = 1
     msg_dic[docs[0]['message']] = 1
-    removed = set()
+    result = [docs[0]]
 
     while front < len(docs):
         # push
-        while rear < len(docs) and (docs[rear]['datetime'] - docs[front]['datetime']).total_seconds() < 10:
-            if docs[rear]['message'] in msg_dic:
-                if msg_dic[docs[rear]['message']] > 0:
-                    error += 1
-                    removed.add(docs[rear]['_id'])
-                msg_dic[docs[rear]['message']] += 1
-            else:
-                msg_dic[docs[rear]['message']] = 1
+        while rear < len(docs) and (docs[rear - 1]['datetime'] - docs[front]['datetime']).total_seconds() < 10:
+            msg = docs[rear]['message']
+            if msg not in msg_dic or msg_dic[msg] == 0:
+                msg_dic[msg] = 0
+                result.append(docs[rear])
+
+            msg_dic[msg] += 1
             rear += 1
-        
+
         if rear >= len(docs):
             break
 
-        if docs[rear]['message'] in msg_dic:
-            msg_dic[docs[rear]['message']] += 1
-        else:
-            msg_dic[docs[rear]['message']] = 1
-        rear += 1
-        
         # pop
         while front < rear and (docs[rear - 1]['datetime'] - docs[front]['datetime']).total_seconds() >= 10:
             msg_dic[docs[front]['message']] -= 1
             front += 1
 
+    return result
+
+
+def get_chats(target_date: datetime):
+    docs = get_docs(target_date, 'PRIVMSG')
     chats = []
     for doc in docs:
-        if doc['_id'] not in removed:
-            try:
-                msg = doc['message']
-                chat = msg.split(':', 2)[-1]
-                chat = chat.strip()
-                if len(chat) > 0:
-                    chats.append(chat)
-            except:
-                pass
+        try:
+            msg = doc['message']
+            chat = msg.split(':', 2)[-1]
+            chat = chat.strip()
+            if len(chat) > 0:
+                chats.append(chat)
+        except:
+            pass
     return chats
 
 
