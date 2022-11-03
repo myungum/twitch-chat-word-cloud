@@ -19,6 +19,9 @@ TOKENIZER_DIR = os.getcwd() + '/soynlp_tokenizer'
 TOKENIZER_TRAIN_RANGE = 7
 TOKENIZER_TRAIN_CHAT_SIZE = 10 ** 7
 AVAILABLE_DATE_RANGE = 14
+MSG_PRIVMSG = 'PRIVMSG'
+MSG_CLEARCHAT = 'CLEARCHAT'
+
 
 trash_list = open('불용어.txt', 'r', encoding='utf8').read().splitlines()
 without_hangul = re.compile('[^ ㄱ-ㅎㅏ-ㅣ가-힣+]')
@@ -100,7 +103,7 @@ def get_docs(target_date: datetime, *args):
 
 
 def get_chats(target_date: datetime):
-    docs = get_docs(target_date, 'PRIVMSG')
+    docs = get_docs(target_date, MSG_PRIVMSG)
     chats = []
     for doc in docs:
         try:
@@ -112,6 +115,47 @@ def get_chats(target_date: datetime):
         except:
             pass
     return chats
+
+
+def get_banned_chats(target_date: datetime):
+    docs = get_docs(target_date, MSG_PRIVMSG, MSG_CLEARCHAT)
+    banned_chats = []
+    ban_dic = dict()
+
+    for doc in docs:
+        msg, msg_t = doc['message'], doc['datetime']
+        # ban
+        if MSG_CLEARCHAT in msg:
+            banned_user = msg.split(':')[-1]
+            if banned_user in ban_dic and len(ban_dic[banned_user]) > 0:
+                banned_msg, banned_msg_t = ban_dic[banned_user][-1]
+                if (msg_t - banned_msg_t).total_seconds() < 60:
+                    ban_dic[banned_user].clear()
+                    banned_chat = banned_msg.split(':', 2)[-1]
+                    banned_chat.strip()
+                    if len(banned_chat) > 0:
+                        banned_chats.append(banned_chat)
+        # chat
+        elif MSG_PRIVMSG in msg:
+            user = msg.split('!')[0][1:]
+            if user not in ban_dic:
+                ban_dic[user] = []
+            ban_dic[user].append((msg, msg_t))
+
+    return banned_chats
+
+
+def save_banned_chats(today: datetime):
+    missing_dates = get_missing_dates(today, 'banned_chat', to_str=False)
+
+    if len(missing_dates) > 0:
+        for date in tqdm(missing_dates):
+            date_str = date.strftime('%Y-%m-%d')
+
+            db['banned_chat'].insert_one({
+                'date': date_str,
+                'data': get_banned_chats(date)
+            })
 
 
 def make_word_frequency(today: datetime):
@@ -224,6 +268,7 @@ try:
 
     make_word_frequency(today)
     make_word_rank(today)
+    save_banned_chats(today)
 
     elapsed_time = (datetime.now() - start_time).total_seconds()
     add_log('elapsed time: {}'.format(str(elapsed_time)))
