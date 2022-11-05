@@ -1,6 +1,6 @@
 import pickle
 from pymongo import MongoClient
-from collections import Counter
+from collections import Counter, deque
 import time
 from tqdm import tqdm
 from datetime import datetime, timedelta
@@ -65,7 +65,7 @@ def get_docs(target_date: datetime, *args):
     lower_bound = target_date
     upper_bound = lower_bound + timedelta(days=1)
     query = [{'message': {'$regex': arg}} for arg in args]
-    docs = list(db['chat'].find({'$and': [{
+    docs = deque(db['chat'].find({'$and': [{
         'datetime': {'$gte': lower_bound}
     },
         {
@@ -75,34 +75,28 @@ def get_docs(target_date: datetime, *args):
     }]}).sort('datetime', 1))
 
     # data does not exists
-    if len(docs) == 0:
+    if not docs:
         return []
 
     # remove duplicated docs
     msg_dic = dict()
-    front = 0
-    rear = 1
-    msg_dic[docs[0]['message']] = 1
-    result = [docs[0]]
+    shelf = deque()
+    result = []
 
-    while front < len(docs):
+    while docs:
         # push
-        while rear < len(docs) and (docs[rear - 1]['datetime'] - docs[front]['datetime']).total_seconds() < 10:
-            msg = docs[rear]['message']
+        while len(docs) > 0 and (len(shelf) <= 1 or (shelf[-1]['datetime'] - shelf[0]['datetime']).total_seconds() < 10):
+            msg = docs[0]['message']
             if msg not in msg_dic or msg_dic[msg] == 0:
                 msg_dic[msg] = 0
-                result.append(docs[rear])
+                result.append(docs[0])
 
             msg_dic[msg] += 1
-            rear += 1
-
-        if rear >= len(docs):
-            break
-
+            shelf.append(docs.popleft())
         # pop
-        while front < rear and (docs[rear - 1]['datetime'] - docs[front]['datetime']).total_seconds() >= 10:
-            msg_dic[docs[front]['message']] -= 1
-            front += 1
+        while len(shelf) > 1 and (shelf[-1]['datetime'] - shelf[0]['datetime']).total_seconds() >= 10:
+            msg_dic[shelf[0]['message']] -= 1
+            shelf.popleft()
 
     return result
 
@@ -160,7 +154,7 @@ def get_banned_chats(target_date: datetime):
 def save_banned_chats(today: datetime):
     missing_dates = get_missing_dates(today, 'banned_chat', to_str=False)
 
-    if len(missing_dates) == 0:
+    if not missing_dates:
         return
 
     for date in tqdm(missing_dates):
@@ -175,7 +169,7 @@ def save_banned_chats(today: datetime):
 def make_word_frequency(today: datetime):
     missing_dates = get_missing_dates(today, 'word_frequency', to_str=False)
 
-    if len(missing_dates) == 0:
+    if not missing_dates:
         return
 
     for date in tqdm(missing_dates):
@@ -205,7 +199,7 @@ def make_word_frequency(today: datetime):
 def make_word_rank(today: datetime):
     missing_dates = get_missing_dates(today, 'word_rank', to_str=False)
 
-    if len(missing_dates) == 0:
+    if not missing_dates:
         return
 
     for date in tqdm(missing_dates):
