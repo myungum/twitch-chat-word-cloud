@@ -73,6 +73,11 @@ def get_docs(target_date: datetime, *args):
     }, {
         '$or': query
     }]}).sort('datetime', 1))
+
+    # data does not exists
+    if len(docs) == 0:
+        return []
+
     # remove duplicated docs
     msg_dic = dict()
     front = 0
@@ -126,15 +131,22 @@ def get_banned_chats(target_date: datetime):
         msg, msg_t = doc['message'], doc['datetime']
         # ban
         if MSG_CLEARCHAT in msg:
+            # 1. check if user has chatted something
             banned_user = msg.split(':')[-1]
-            if banned_user in ban_dic and len(ban_dic[banned_user]) > 0:
-                banned_msg, banned_msg_t = ban_dic[banned_user][-1]
-                if (msg_t - banned_msg_t).total_seconds() < 60:
-                    ban_dic[banned_user].clear()
-                    banned_chat = banned_msg.split(':', 2)[-1]
-                    banned_chat.strip()
-                    if len(banned_chat) > 0:
-                        banned_chats.append(banned_chat)
+            if banned_user not in ban_dic or len(ban_dic[banned_user]) == 0:
+                continue
+            # 2. check if chat is expired
+            banned_msg, banned_msg_t = ban_dic[banned_user][-1]
+            ban_dic[banned_user].clear()
+            if (msg_t - banned_msg_t).total_seconds() >= 60:
+                continue
+            # 3. check if chat is available
+            banned_chat = banned_msg.split(':', 2)[-1]
+            banned_chat.strip()
+            if len(banned_chat) == 0:
+                continue
+
+            banned_chats.append(banned_chat)
         # chat
         elif MSG_PRIVMSG in msg:
             user = msg.split('!')[0][1:]
@@ -148,80 +160,86 @@ def get_banned_chats(target_date: datetime):
 def save_banned_chats(today: datetime):
     missing_dates = get_missing_dates(today, 'banned_chat', to_str=False)
 
-    if len(missing_dates) > 0:
-        for date in tqdm(missing_dates):
-            date_str = date.strftime('%Y-%m-%d')
+    if len(missing_dates) == 0:
+        return
 
-            db['banned_chat'].insert_one({
-                'date': date_str,
-                'data': get_banned_chats(date)
-            })
+    for date in tqdm(missing_dates):
+        date_str = date.strftime('%Y-%m-%d')
+
+        db['banned_chat'].insert_one({
+            'date': date_str,
+            'data': get_banned_chats(date)
+        })
 
 
 def make_word_frequency(today: datetime):
     missing_dates = get_missing_dates(today, 'word_frequency', to_str=False)
 
-    if len(missing_dates) > 0:
-        for date in tqdm(missing_dates):
-            date_str = date.strftime('%Y-%m-%d')
-            tokenizer = get_tokenizer(date)
-            add_log('make word frequency: {}'.format(date_str))
-            counter = Counter()
-            for chat in get_chats(date):
-                word_set = set()
-                hangul = without_hangul.sub('', chat).strip()
-                for word in tokenizer.tokenize(hangul):
-                    word_set.add(word)
-                counter.update(word_set)
+    if len(missing_dates) == 0:
+        return
 
-            data = []
-            for word, count in counter.most_common():
-                if count >= MIN_COUNT:
-                    data.append((word, count))
-            counter = None
+    for date in tqdm(missing_dates):
+        date_str = date.strftime('%Y-%m-%d')
+        tokenizer = get_tokenizer(date)
+        add_log('make word frequency: {}'.format(date_str))
+        counter = Counter()
+        for chat in get_chats(date):
+            word_set = set()
+            hangul = without_hangul.sub('', chat).strip()
+            for word in tokenizer.tokenize(hangul):
+                word_set.add(word)
+            counter.update(word_set)
 
-            db['word_frequency'].insert_one({
-                'date': date_str,
-                'data': dict(data)
-            })
+        data = []
+        for word, count in counter.most_common():
+            if count >= MIN_COUNT:
+                data.append((word, count))
+        counter = None
+
+        db['word_frequency'].insert_one({
+            'date': date_str,
+            'data': dict(data)
+        })
 
 
 def make_word_rank(today: datetime):
     missing_dates = get_missing_dates(today, 'word_rank', to_str=False)
 
-    if len(missing_dates) > 0:
-        for date in tqdm(missing_dates):
-            date_str = date.strftime('%Y-%m-%d')
-            min_date_str = (date - timedelta(days=7)).strftime('%Y-%m-%d')
-            add_log('make word rank: {}'.format(date_str))
+    if len(missing_dates) == 0:
+        return
 
-            # get data for week
-            docs = list(db['word_frequency'].find({
-                'date': {
-                    '$gte': min_date_str,
-                    '$lt': date_str
-                }
-            }).sort('date', 1))
+    for date in tqdm(missing_dates):
+        date_str = date.strftime('%Y-%m-%d')
+        min_date_str = (date - timedelta(days=7)).strftime('%Y-%m-%d')
+        add_log('make word rank: {}'.format(date_str))
 
-            # make word rank
-            rank = []
-            for word, count in db['word_frequency'].find_one({'date': date_str})['data'].items():
-                weekly_counts = [doc['data'][word]
-                                 if word in doc['data'] else MIN_COUNT - 1 for doc in docs]
+        # get data for week
+        docs = list(db['word_frequency'].find({
+            'date': {
+                '$gte': min_date_str,
+                '$lt': date_str
+            }
+        }).sort('date', 1))
 
-                # expected value = max(average for week, yesterday's value)
-                avg = sum(weekly_counts) / len(weekly_counts)
-                expected = max(avg, weekly_counts[0])
-                increase = (count - expected) / expected
-                if increase > 0:
-                    score = int(increase * math.log2(count))
-                    rank.append((word, (score, count, increase)))
+        # make word rank
+        rank = []
+        for word, count in db['word_frequency'].find_one({'date': date_str})['data'].items():
+            weekly_counts = [doc['data'][word]
+                                if word in doc['data'] else MIN_COUNT - 1 for doc in docs]
 
-            rank.sort(key=lambda x: x[1][0], reverse=True)
-            db['word_rank'].insert_one({
-                'date': date_str,
-                'data': dict(rank)
-            })
+            # expected value = max(average for week, yesterday's value)
+            avg = sum(weekly_counts) / len(weekly_counts)
+            expected = max(avg, weekly_counts[0])
+            increase = (count - expected) / expected
+            if increase > 0:
+                score = int(increase * math.log2(count))
+                rank.append((word, (score, count, increase)))
+
+        rank.sort(key=lambda x: x[1][0], reverse=True)
+        db['word_rank'].insert_one({
+            'date': date_str,
+            'data': dict(rank)
+        })
 
 
 def get_tokenizer(target_date: datetime):
