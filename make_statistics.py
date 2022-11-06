@@ -12,6 +12,9 @@ import math
 import json
 import traceback
 import sys
+from word_cloud_log_handler import WordCloudLogHandler
+import logging
+
 
 UPDATE_PERIOD = 600
 MIN_COUNT = 24
@@ -31,22 +34,17 @@ with open('settings.json', 'r') as file:
     conn_info = dict(json.load(file))
 client = None
 db = None
+logger = logging.getLogger()
+logger.addHandler(WordCloudLogHandler(logging.DEBUG, conn_info))
+logger.setLevel(logging.DEBUG)
 
-
-def add_log(msg):
-    now = datetime.now()
-    print('[{}] {}'.format(now, msg))
-    # db['log'].insert_one({
-    #     'source': __file__,
-    #     'msg': msg,
-    #     'datetime': now
-    # })
 
 def get_dates(base: datetime, to_str: bool):
     date_list = [base - timedelta(days=x+1) for x in range(AVAILABLE_DATE_RANGE)]
     if to_str:
         date_list = [date.strftime('%Y-%m-%d') for date in date_list]
     return date_list
+
 
 def get_missing_dates(today: datetime, collection_name: str, to_str: bool):
     missing_dates = list(
@@ -159,6 +157,7 @@ def save_banned_chats(today: datetime):
 
     for date in tqdm(missing_dates):
         date_str = date.strftime('%Y-%m-%d')
+        logger.info('save banned chats: {}'.format(date_str))
 
         db['banned_chat'].insert_one({
             'date': date_str,
@@ -175,7 +174,7 @@ def make_word_frequency(today: datetime):
     for date in tqdm(missing_dates):
         date_str = date.strftime('%Y-%m-%d')
         tokenizer = get_tokenizer(date)
-        add_log('make word frequency: {}'.format(date_str))
+        logger.info('make word frequency: {}'.format(date_str))
         counter = Counter()
         for chat in get_chats(date):
             word_set = set()
@@ -205,7 +204,7 @@ def make_word_rank(today: datetime):
     for date in tqdm(missing_dates):
         date_str = date.strftime('%Y-%m-%d')
         min_date_str = (date - timedelta(days=7)).strftime('%Y-%m-%d')
-        add_log('make word rank: {}'.format(date_str))
+        logger.info('make word rank: {}'.format(date_str))
 
         # get data for week
         docs = list(db['word_frequency'].find({
@@ -244,7 +243,7 @@ def get_tokenizer(target_date: datetime):
         '/' + target_date.strftime('%Y-%m-%d')
 
     if not os.path.exists(tokenizer_file_name):
-        add_log('make tokenizer : {}'.format(tokenizer_file_name))
+        logger.info('make tokenizer : {}'.format(tokenizer_file_name))
 
         # make tokenizer
         chats = get_chats(target_date)
@@ -283,9 +282,10 @@ try:
     save_banned_chats(today)
 
     elapsed_time = (datetime.now() - start_time).total_seconds()
-    add_log('elapsed time: {}'.format(str(elapsed_time)))
+    logger.info('elapsed time: {}'.format(str(elapsed_time)))
     time.sleep(max(UPDATE_PERIOD - elapsed_time, 0))
-except:
+except Exception as e:
+    logger.error(str(e))
     traceback.print_exc(file=sys.stderr)
 finally:
     client.close()
