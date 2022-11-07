@@ -2,11 +2,13 @@ from pymongo import MongoClient
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import Response
 from datetime import datetime, timedelta
 import json
 import time
 from threading import Thread, Lock
 from collections import deque
+
 
 CHATS_PER_SEC_FIND_LIMIT = 30
 
@@ -102,3 +104,12 @@ async def word_count_in_10days(word: str, period: int):
                 "y": count
             })
     return result
+
+
+@app.get("/download/banned_chat")
+def banned_chat():
+    data = []
+    for doc in db['banned_chat'].find({}):
+        data += doc['data']
+
+    return Response(content='\r\n'.join(data),  media_type="text/plain")
